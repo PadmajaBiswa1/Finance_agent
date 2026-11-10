@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FinanceAgent · Indian SME Financial Analyst</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+  <div class="app-layout">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-icon"><i class="fa-solid fa-chart-pie"></i></div>
+        <div class="brand-info">
+          <h2>FinanceAgent</h2>
+          <span>Indian MSME Analyst</span>
+        </div>
+      </div>
+
+      <!-- Upload Card -->
+      <div class="panel-card">
+        <label class="panel-label">Upload Statement</label>
+        <div class="file-dropzone" id="drop-zone">
+          <i class="fa-solid fa-cloud-arrow-up drop-icon"></i>
+          <span id="file-label">Drop CSV, XLSX, or PDF</span>
+          <input type="file" id="file-input" accept=".csv,.xlsx,.xls,.pdf">
+        </div>
+        <div id="file-info" class="file-pill hidden">
+          <i class="fa-solid fa-file-lines"></i>
+          <span id="selected-file-name" class="file-name-truncate"></span>
+          <button id="clear-file" class="btn-icon" title="Remove">&times;</button>
+        </div>
+
+        <div class="input-grid">
+          <div class="input-group">
+            <label for="period-input">Period</label>
+            <input type="text" id="period-input" value="FY 2023-24" placeholder="FY 2023-24">
+          </div>
+          <div class="input-group">
+            <label for="business-name-input">Company</label>
+            <input type="text" id="business-name-input" value="Bharat Precision Auto" placeholder="Company Name">
+          </div>
+        </div>
+
+        <details class="accordion">
+          <summary><i class="fa-solid fa-sliders"></i> Advanced Options</summary>
+          <div class="accordion-content">
+            <div class="input-group">
+              <label for="second-file-input">Prior Period File (Compare)</label>
+              <input type="file" id="second-file-input" accept=".csv,.xlsx,.xls,.pdf">
+            </div>
+            <div class="input-group">
+              <label for="comp-period-input">Prior Period Label</label>
+              <input type="text" id="comp-period-input" value="FY 2022-23" placeholder="FY 2022-23">
+            </div>
+            <div class="input-group">
+              <label for="official-url-input">Official Statutory URL</label>
+              <input type="url" id="official-url-input" placeholder="e.g. https://gst.gov.in/news">
+            </div>
+          </div>
+        </details>
+      </div>
+
+      <!-- Compact Telemetry -->
+      <div class="panel-card telemetry-card">
+        <label class="panel-label">Live Telemetry</label>
+        <div class="telemetry-grid">
+          <div class="stat-pill">
+            <span class="stat-name">Requests</span>
+            <strong id="stat-requests">0</strong>
+          </div>
+          <div class="stat-pill">
+            <span class="stat-name">Tokens</span>
+            <strong id="stat-tokens">0</strong>
+          </div>
+          <div class="stat-pill">
+            <span class="stat-name">Latency</span>
+            <strong id="stat-latency">0 ms</strong>
+          </div>
+          <div class="stat-pill">
+            <span class="stat-name">Tokens Saved</span>
+            <strong id="stat-savings" class="text-green">0</strong>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer Badge -->
+      <div class="sidebar-status">
+        <span class="status-indicator"><span class="dot online"></span> Guardrails Active · Decimal Math</span>
+      </div>
+    </aside>
+
+    <!-- Main Workspace -->
+    <main class="main-content">
+      <header class="topbar">
+        <div class="topbar-title">
+          <span class="dot online"></span>
+          <span>AI Financial Analyst · Indian MSME</span>
+        </div>
+        <div class="sample-pills">
+          <span class="sample-tag">Samples:</span>
+          <button class="pill-btn" id="btn-sample-pnl">📊 FY24 P&L</button>
+          <button class="pill-btn" id="btn-sample-bs">⚖️ Balance Sheet</button>
+          <button class="pill-btn" id="btn-sample-cf">💵 Cash Flow</button>
+        </div>
+      </header>
+
+      <section class="chat-container" id="chat-stream">
+        <!-- Minimal Welcome Card -->
+        <div class="welcome-hero">
+          <div class="hero-icon"><i class="fa-solid fa-chart-simple"></i></div>
+          <h3>Welcome to FinanceAgent</h3>
+          <p>Upload your financial statements or pick an analysis below:</p>
+
+          <div class="quick-grid">
+            <button class="quick-card" data-prompt="Analyze the uploaded FY 2023-24 P&L statement. Compute Gross Profit, EBITDA, PAT, and profitability margins.">
+              <i class="fa-solid fa-calculator"></i>
+              <strong>P&L & Margins</strong>
+              <span>EBITDA, Gross Profit, PAT</span>
+            </button>
+            <button class="quick-card" data-prompt="Audit this Balance Sheet: check if it balances, and calculate the Current Ratio and Working Capital.">
+              <i class="fa-solid fa-scale-balanced"></i>
+              <strong>Balance Sheet</strong>
+              <span>Asset equality & Liquidity</span>
+            </button>
+            <button class="quick-card" data-prompt="Compare our financial performance between FY 2022-23 and FY 2023-24.">
+              <i class="fa-solid fa-arrow-trend-up"></i>
+              <strong>Compare Periods</strong>
+              <span>FY23 vs FY24 Variance</span>
+            </button>
+            <button class="quick-card" data-prompt="What is the impact of Income Tax Section 43B(h) on overdue payments to MSME vendors?">
+              <i class="fa-solid fa-file-contract"></i>
+              <strong>MSME Sec 43B(h)</strong>
+              <span>45-day payment rules</span>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Input Area -->
+      <footer class="input-panel">
+        <div class="chips-row">
+          <button class="chip" data-prompt="Calculate Gross Profit, EBITDA, and Net Margin from our P&L.">📊 EBITDA & Margins</button>
+          <button class="chip" data-prompt="Audit this Balance Sheet and calculate Current Ratio.">⚖️ Balance Sheet</button>
+          <button class="chip" data-prompt="Compare FY22-23 vs FY23-24 performance.">📈 Compare Periods</button>
+          <button class="chip" data-prompt="Explain MSME 45-day rule under Section 43B(h).">📜 MSME 43B(h)</button>
+          <button class="chip chip-danger" data-prompt="bhai meri girlfriend se ladai ho gayi hai kya karu">🚫 Out-of-Scope Test</button>
+        </div>
+
+        <form id="chat-form" class="chat-form">
+          <textarea id="user-input" rows="1" placeholder="Ask a financial question or analyze uploaded statements..."></textarea>
+          <button type="submit" id="send-btn" class="send-btn" title="Send query">
+            <i class="fa-solid fa-arrow-up"></i>
+          </button>
+        </form>
+      </footer>
+    </main>
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

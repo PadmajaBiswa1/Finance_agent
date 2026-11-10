@@ -1,0 +1,15 @@
+Particulars,Note No.,Figures for FY 2023-24 (in INR),Figures for FY 2022-23 (in INR)
+I. Revenue from Operations,1,"2,50,00,000.00","2,00,00,000.00"
+II. Other Income,2,"5,00,000.00","4,00,000.00"
+III. Total Income (I + II),,"2,55,00,000.00","2,04,00,000.00"
+IV. Expenses:,,,
+Cost of Materials Consumed,3,"1,40,00,000.00","1,15,00,000.00"
+Changes in Inventories of Finished Goods,4,"5,00,000.00","2,00,000.00"
+Employee Benefit Expenses,5,"35,00,000.00","30,00,000.00"
+Finance Costs,6,"8,00,000.00","7,00,000.00"
+Depreciation & Amortization Expenses,7,"7,00,000.00","6,00,000.00"
+Other Expenses,8,"20,00,000.00","18,00,000.00"
+Total Expenses,,"2,15,00,000.00","1,78,00,000.00"
+V. Profit Before Tax (III - IV),,"40,00,000.00","26,00,000.00"
+VI. Tax Expense (Current Tax),9,"10,00,000.00","6,50,000.00"
+VII. Profit After Tax (PAT),,"30,00,000.00","19,50,000.00"
