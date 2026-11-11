@@ -316,6 +316,38 @@ body {
   justify-content: space-between;
 }
 
+.topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.new-chat-btn {
+  background: var(--primary);
+  color: #ffffff;
+  border: none;
+  border-radius: 20px;
+  padding: 5px 13px;
+  font-size: 0.76rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 1px 3px rgba(37, 99, 235, 0.25);
+  transition: all 0.2s ease;
+}
+
+.new-chat-btn:hover {
+  background: var(--primary-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(37, 99, 235, 0.35);
+}
+
+.new-chat-btn:active {
+  transform: translateY(0);
+}
+
 .topbar-title {
   display: flex;
   align-items: center;

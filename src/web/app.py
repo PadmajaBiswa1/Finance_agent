@@ -44,6 +44,7 @@ async def serve_index():
 async def chat_endpoint(
     message: str = Form(...),
     file: Optional[UploadFile] = File(None),
+    sample_name: Optional[str] = Form(None),
     second_file: Optional[UploadFile] = File(None),
     official_url: Optional[str] = Form(None),
     generate_report: bool = Form(True),
@@ -61,6 +62,12 @@ async def chat_endpoint(
             saved_file_path = settings.uploads_dir / safe_filename
             with open(saved_file_path, "wb") as buffer:
                 shutil.copyfileobj(file.file, buffer)
+        elif sample_name:
+            # Fallback to server sample file if user selected a preloaded sample
+            safe_sample = Path(sample_name).name
+            candidate_sample = settings.data_dir / "samples" / safe_sample
+            if candidate_sample.exists():
+                saved_file_path = candidate_sample
 
         # Save secondary uploaded file if present
         if second_file and second_file.filename:
@@ -106,3 +113,14 @@ async def list_sample_files():
                 "extension": p.suffix
             })
     return {"samples": samples}
+
+@app.get("/api/samples/{filename}")
+async def get_sample_file(filename: str):
+    safe_name = Path(filename).name
+    sample_path = settings.data_dir / "samples" / safe_name
+    if not sample_path.exists() or not sample_path.is_file():
+        raise HTTPException(status_code=404, detail=f"Sample file '{safe_name}' not found.")
+    media_type = "application/pdf" if safe_name.endswith(".pdf") else (
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" if safe_name.endswith(".xlsx") else "text/csv"
+    )
+    return FileResponse(path=str(sample_path), filename=safe_name, media_type=media_type)

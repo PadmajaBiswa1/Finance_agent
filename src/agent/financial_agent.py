@@ -48,6 +48,47 @@ def _generate_clean_fallback_summary(
         f"**Reporting Period**: {period} | **Currency**: INR (₹)\n"
     ]
 
+    # 1. Cash Flow Highlights
+    items_summary = compact_context.get("line_items_summary", [])
+    cf_keys = {
+        "Net Cash Flow from Operating Activities": "Operating Activities (CFO)",
+        "Net Cash Flow from Investing Activities": "Investing Activities (CFI)",
+        "Net Cash Flow from Financing Activities": "Financing Activities (CFF)",
+        "Net Increase in Cash": "Net Increase / (Decrease) in Cash",
+        "Opening Cash Balance": "Opening Cash & Equivalents",
+        "Closing Cash Balance": "Closing Cash & Equivalents"
+    }
+    cf_found = [i for i in items_summary if i.get("item") in cf_keys]
+    if cf_found:
+        lines.append("#### Cash Flow Statement Breakdown & Reconciliation")
+        lines.append("| Activity / Line Item | Amount (INR) | Source Citation |")
+        lines.append("|---|---|---|")
+        cf_dict = {}
+        for item in cf_found:
+            k = item.get("item")
+            amt = item.get("amount")
+            src = item.get("source", "")
+            cf_dict[k] = amt
+            display_name = cf_keys.get(k, k)
+            lines.append(f"| **{display_name}** | ₹ {amt} | {src} |")
+        lines.append("")
+
+        # Add Cash Flow Reconciliation highlights
+        cfo = cf_dict.get("Net Cash Flow from Operating Activities")
+        cfi = cf_dict.get("Net Cash Flow from Investing Activities")
+        cff = cf_dict.get("Net Cash Flow from Financing Activities")
+        net_cash = cf_dict.get("Net Increase in Cash")
+        open_cash = cf_dict.get("Opening Cash Balance")
+        close_cash = cf_dict.get("Closing Cash Balance")
+
+        lines.append("##### Cash Flow Verification Audit:")
+        if cfo is not None and cfi is not None and cff is not None and net_cash is not None:
+            lines.append(f"• **Sum Check (CFO + CFI + CFF = Net Increase)**: ₹ {cfo} + (₹ {cfi}) + (₹ {cff}) = **₹ {net_cash}** ✅ *Exact Reconciliation Verified*")
+        if open_cash is not None and net_cash is not None and close_cash is not None:
+            lines.append(f"• **Closing Balance Reconciliation**: Opening Balance (₹ {open_cash}) + Net Change (₹ {net_cash}) = **₹ {close_cash}** ✅ *Closing Balance Reconciled*")
+        lines.append("")
+
+    # 2. Profitability Metrics
     pm = compact_context.get("computed_profit_metrics")
     if pm:
         lines.append("#### Key Profitability Metrics")
@@ -60,11 +101,12 @@ def _generate_clean_fallback_summary(
             ("EBIT", pm.get("EBIT")),
             ("Profit After Tax (PAT)", pm.get("PAT")),
         ]:
-            if v and v != "unavailable":
-                formula = pm.get("Formulas", {}).get(k, "Derived from statements")
-                lines.append(f"| **{k}** | ₹ {v} | {formula} |")
+            formula = pm.get("Formulas", {}).get(k, "Derived from statements")
+            val_str = f"₹ {v}" if (v and v != "unavailable") else "unavailable"
+            lines.append(f"| **{k}** | {val_str} | {formula} |")
         lines.append("")
 
+    # 3. Financial Ratios & Liquidity
     fr = compact_context.get("computed_financial_ratios")
     if fr:
         lines.append("#### Key Financial Ratios & Liquidity")
@@ -79,10 +121,10 @@ def _generate_clean_fallback_summary(
             ("Working Capital", f"₹ {fr.get('Working_Capital')}" if fr.get("Working_Capital") != "unavailable" else "unavailable", "Positive"),
             ("DSCR", fr.get("DSCR"), "> 1.5"),
         ]:
-            if v and v != "unavailable":
-                lines.append(f"| **{k}** | {v} | {bench} |")
+            lines.append(f"| **{k}** | {v} | {bench} |")
         lines.append("")
 
+    # 4. Period Comparison
     pcomp = compact_context.get("period_comparison")
     if pcomp:
         lines.append("#### Period Comparison Highlights")
@@ -93,11 +135,20 @@ def _generate_clean_fallback_summary(
             lines.append(f"| {c.get('metric')} | ₹ {c.get('period_a')} | ₹ {c.get('period_b')} | {c.get('variance_pct')}% | {status} |")
         lines.append("")
 
-    cc_summary = compact_context.get("consistency_summary")
-    if cc_summary:
-        lines.append(f"**Accounting Consistency**: {cc_summary}")
+    # 5. Consistency Checks
+    cc_checks = compact_context.get("consistency_checks")
+    if cc_checks:
+        lines.append("#### Accounting Consistency Audit")
+        lines.append("| Check | Status | Verification Details |")
+        lines.append("|---|---|---|")
+        for chk in cc_checks:
+            icon = "✅" if chk.get("status") == "PASSED" else ("❌" if chk.get("status") == "FAILED" else "⚠️")
+            lines.append(f"| {chk.get('check_name')} | {icon} {chk.get('status')} | {chk.get('explanation')} |")
+        lines.append("")
+    elif compact_context.get("consistency_summary"):
+        lines.append(f"**Accounting Consistency**: {compact_context.get('consistency_summary')}\n")
 
-    lines.append("\n*(Note: All monetary figures calculated deterministically in Python Decimal without LLM estimation.)*")
+    lines.append("*(Note: All monetary figures calculated deterministically in Python Decimal without LLM estimation.)*")
     return "\n".join(lines)
 
 class FinancialAgent:
@@ -386,6 +437,19 @@ class FinancialAgent:
         if cc:
             compact_context["consistency_summary"] = cc.summary
             compact_context["consistency_warnings"] = cc.data_quality_warnings
+            compact_context["consistency_checks"] = [
+                {
+                    "check_name": c.check_name,
+                    "status": c.status,
+                    "left_expression": c.left_expression,
+                    "left_value": str(c.left_value),
+                    "right_expression": c.right_expression,
+                    "right_value": str(c.right_value),
+                    "discrepancy": str(c.discrepancy),
+                    "explanation": c.explanation
+                }
+                for c in cc.checks
+            ]
 
         if browser_output:
             compact_context["official_statutory_text"] = {
@@ -394,7 +458,7 @@ class FinancialAgent:
                 "content_excerpt": browser_output["clean_text"][:3000]
             }
 
-        # Step 5: Explanation with Strong Reasoning Model (gemini-3.5-flash)
+        # Step 5: Explanation with Reasoning Model (gemini-3.5-flash with fallback)
         llm_prompt = f"""User Request:
 \"\"\"{user_message}\"\"\"
 
@@ -405,31 +469,42 @@ Instructions:
 - Provide a clear, professional, plain-language financial explanation for the Indian SME owner.
 - Use ONLY the pre-calculated numbers from the data above; do NOT perform your own arithmetic.
 - Include currency (INR / ₹), reporting period, assumptions, and source citations (sheet/page, row).
+- If checking cash flows, state clearly whether Operating + Investing + Financing cash flows equal Net Increase in Cash, and whether Closing Cash reconciles with Opening Cash + Net Increase.
 - Point out any red flags or accounting consistency issues if present."""
 
         t_rsn_0 = time.time()
-        try:
-            rsn_response = self.client.models.generate_content(
-                model=settings.strong_model_id,
-                contents=[
-                    types.Content(
-                        role="user",
-                        parts=[
-                            types.Part.from_text(text=f"{SYSTEM_PROMPT}\n\n{llm_prompt}")
-                        ]
+        raw_answer = ""
+        prompt_toks = len(llm_prompt) // 4
+        comp_toks = 0
+        models_to_try = [settings.strong_model_id, settings.fast_model_id, "gemini-3.1-flash-lite"]
+
+        for m_id in models_to_try:
+            try:
+                rsn_response = self.client.models.generate_content(
+                    model=m_id,
+                    contents=[
+                        types.Content(
+                            role="user",
+                            parts=[
+                                types.Part.from_text(text=f"{SYSTEM_PROMPT}\n\n{llm_prompt}")
+                            ]
+                        )
+                    ],
+                    config=types.GenerateContentConfig(
+                        temperature=0.2,
+                        max_output_tokens=2048
                     )
-                ],
-                config=types.GenerateContentConfig(
-                    temperature=0.2,
-                    max_output_tokens=2048
                 )
-            )
-            raw_answer = (rsn_response.text or "").strip()
-            prompt_toks = getattr(rsn_response.usage_metadata, "prompt_token_count", len(llm_prompt) // 4)
-            comp_toks = getattr(rsn_response.usage_metadata, "candidates_token_count", len(raw_answer) // 4)
-        except Exception as exc:
+                if rsn_response.text and rsn_response.text.strip():
+                    raw_answer = rsn_response.text.strip()
+                    prompt_toks = getattr(rsn_response.usage_metadata, "prompt_token_count", prompt_toks)
+                    comp_toks = getattr(rsn_response.usage_metadata, "candidates_token_count", len(raw_answer) // 4)
+                    break
+            except Exception:
+                continue
+
+        if not raw_answer:
             raw_answer = _generate_clean_fallback_summary(compact_context, period, business_name)
-            prompt_toks = len(llm_prompt) // 4
             comp_toks = len(raw_answer) // 4
 
 

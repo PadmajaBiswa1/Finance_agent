@@ -24,7 +24,8 @@ def sanitize_cell_text(text: Any) -> str:
     """
     Sanitizes cell contents:
     1. Converts to string.
-    2. Strips leading formula indicators (=, +, -, @) to prevent CSV injection.
+    2. Strips dangerous formula injection prefixes (=, @, or + / - when followed by command letters) to prevent CSV injection,
+       while preserving valid positive and negative numbers (e.g. -1500000, -1,50,000, +500).
     3. Neutralizes prompt-injection patterns so cell text is strictly data, never instructions.
     """
     if text is None:
@@ -32,8 +33,14 @@ def sanitize_cell_text(text: Any) -> str:
     val = str(text).strip()
     
     # Strip dangerous formula injection prefixes
-    if val.startswith(("=", "+", "-", "@")):
-        val = "'" + val.lstrip("=+-@")
+    # Formula injection occurs when cells start with =, @, or + / - followed by letters/functions, not numbers
+    if val.startswith(("=", "@")):
+        val = "'" + val.lstrip("=@")
+    elif val.startswith(("+", "-")):
+        # If it's a valid numeric expression (with currency or commas), preserve it
+        is_numeric = bool(re.match(r"^[-+]?\s*₹?\s*[\d,]+(\.\d+)?", val))
+        if not is_numeric:
+            val = "'" + val.lstrip("+-")
         
     # Neutralize prompt injection tokens
     for pat in INJECTION_PATTERNS:

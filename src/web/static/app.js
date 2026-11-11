@@ -13,8 +13,10 @@ document.addEventListener("DOMContentLoaded", () => {
   const businessNameInput = document.getElementById("business-name-input");
   const compPeriodInput = document.getElementById("comp-period-input");
   const officialUrlInput = document.getElementById("official-url-input");
+  const newChatBtn = document.getElementById("btn-new-chat");
 
   let activeFile = null;
+  let activeSampleName = null;
 
   // File drag & drop handling
   dropZone.addEventListener("click", () => fileInput.click());
@@ -44,6 +46,7 @@ document.addEventListener("DOMContentLoaded", () => {
   clearFileBtn.addEventListener("click", (e) => {
     e.stopPropagation();
     activeFile = null;
+    activeSampleName = null;
     fileInput.value = "";
     fileInfo.classList.add("hidden");
     dropZone.classList.remove("hidden");
@@ -51,39 +54,134 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function setFile(file) {
     activeFile = file;
+    activeSampleName = null;
     selectedFileName.textContent = `${file.name} (${(file.size / 1024).toFixed(0)} KB)`;
     fileInfo.classList.remove("hidden");
+    dropZone.classList.add("hidden");
   }
 
-  // Quick suggestion chips & hero cards
-  document.querySelectorAll(".chip, .quick-card").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const prompt = btn.getAttribute("data-prompt");
-      if (prompt) {
-        userInput.value = prompt;
-        userInput.focus();
-      }
+  // Quick suggestion chips & hero cards binding
+  function bindQuickCards() {
+    document.querySelectorAll(".chip, .quick-card").forEach((btn) => {
+      btn.onclick = () => {
+        const prompt = btn.getAttribute("data-prompt");
+        if (prompt) {
+          userInput.value = prompt;
+          userInput.style.height = "auto";
+          userInput.style.height = Math.min(userInput.scrollHeight, 120) + "px";
+          userInput.focus();
+        }
+      };
     });
-  });
+  }
+  bindQuickCards();
 
   // Sample data loaders
-  document.getElementById("btn-sample-pnl").addEventListener("click", async () => {
-    userInput.value = "Analyze the uploaded FY 2023-24 P&L statement. Compute Gross Profit, EBITDA, Operating Profit, PAT, and profitability margins.";
-    selectedFileName.textContent = "sample_sme_pnl_fy24.csv (Server Sample)";
+  async function selectSample(filename, promptText, defaultPeriod = "FY 2023-24", defaultCompany = "Bharat Precision Auto Pvt Ltd") {
+    try {
+      const resp = await fetch(`/api/samples/${filename}`);
+      if (resp.ok) {
+        const blob = await resp.blob();
+        activeFile = new File([blob], filename, { type: blob.type || "application/octet-stream" });
+        selectedFileName.textContent = `${filename} (${(blob.size / 1024).toFixed(0)} KB)`;
+      } else {
+        activeFile = new File(["sample"], filename);
+        selectedFileName.textContent = `${filename} (Preloaded Sample)`;
+      }
+    } catch (e) {
+      activeFile = new File(["sample"], filename);
+      selectedFileName.textContent = `${filename} (Preloaded Sample)`;
+    }
+    activeSampleName = filename;
     fileInfo.classList.remove("hidden");
+    dropZone.classList.add("hidden");
+    userInput.value = promptText;
+    periodInput.value = defaultPeriod;
+    businessNameInput.value = defaultCompany;
+    userInput.style.height = "auto";
+    userInput.style.height = Math.min(userInput.scrollHeight, 120) + "px";
+    userInput.focus();
+  }
+
+  document.getElementById("btn-sample-pnl").addEventListener("click", () => {
+    selectSample(
+      "sample_sme_pnl_fy24.csv",
+      "Analyze the uploaded FY 2023-24 P&L statement. Compute Gross Profit, EBITDA, Operating Profit, PAT, and profitability margins."
+    );
   });
 
   document.getElementById("btn-sample-bs").addEventListener("click", () => {
-    userInput.value = "Audit our FY 2023-24 Balance Sheet. Check if Total Assets balance with Liabilities & Equity, and calculate the Current Ratio and Working Capital.";
-    selectedFileName.textContent = "sample_sme_balancesheet_fy24.xlsx (Server Sample)";
-    fileInfo.classList.remove("hidden");
+    selectSample(
+      "sample_sme_balancesheet_fy24.xlsx",
+      "Audit our FY 2023-24 Balance Sheet. Check if Total Assets balance with Liabilities & Equity, and calculate the Current Ratio and Working Capital."
+    );
   });
 
   document.getElementById("btn-sample-cf").addEventListener("click", () => {
-    userInput.value = "Review our Cash Flow Statement for FY 2023-24. Verify if Net Cash Flow equals Operating + Investing + Financing cash flows, and check closing balance reconciliation.";
-    selectedFileName.textContent = "sample_sme_cashflow_fy24.pdf (Server Sample)";
-    fileInfo.classList.remove("hidden");
+    selectSample(
+      "sample_sme_cashflow_fy24.pdf",
+      "Review our Cash Flow Statement for FY 2023-24. Verify if Net Cash Flow equals Operating + Investing + Financing cash flows, and check closing balance reconciliation."
+    );
   });
+
+  // New Chat handler
+  if (newChatBtn) {
+    newChatBtn.addEventListener("click", () => {
+      resetToNewChat();
+    });
+  }
+
+  function resetToNewChat() {
+    activeFile = null;
+    activeSampleName = null;
+    fileInput.value = "";
+    secondFileInput.value = "";
+    fileInfo.classList.add("hidden");
+    dropZone.classList.remove("hidden");
+    userInput.value = "";
+    userInput.style.height = "auto";
+    periodInput.value = "FY 2023-24";
+    businessNameInput.value = "Bharat Precision Auto";
+    compPeriodInput.value = "FY 2022-23";
+    officialUrlInput.value = "";
+    sendBtn.disabled = false;
+
+    // Reset chat stream with clean welcome hero
+    chatStream.innerHTML = `
+      <div class="welcome-hero">
+        <div class="hero-icon"><i class="fa-solid fa-chart-simple"></i></div>
+        <h3>Welcome to FinanceAgent</h3>
+        <p>Upload your financial statements or pick an analysis below:</p>
+
+        <div class="quick-grid">
+          <button class="quick-card" data-prompt="Analyze the uploaded FY 2023-24 P&L statement. Compute Gross Profit, EBITDA, PAT, and profitability margins.">
+            <i class="fa-solid fa-calculator"></i>
+            <strong>P&L & Margins</strong>
+            <span>EBITDA, Gross Profit, PAT</span>
+          </button>
+          <button class="quick-card" data-prompt="Audit this Balance Sheet: check if it balances, and calculate the Current Ratio and Working Capital.">
+            <i class="fa-solid fa-scale-balanced"></i>
+            <strong>Balance Sheet</strong>
+            <span>Asset equality & Liquidity</span>
+          </button>
+          <button class="quick-card" data-prompt="Compare our financial performance between FY 2022-23 and FY 2023-24.">
+            <i class="fa-solid fa-arrow-trend-up"></i>
+            <strong>Compare Periods</strong>
+            <span>FY23 vs FY24 Variance</span>
+          </button>
+          <button class="quick-card" data-prompt="What is the impact of Income Tax Section 43B(h) on overdue payments to MSME vendors?">
+            <i class="fa-solid fa-file-contract"></i>
+            <strong>MSME Sec 43B(h)</strong>
+            <span>45-day payment rules</span>
+          </button>
+        </div>
+      </div>
+    `;
+
+    bindQuickCards();
+    updateTelemetry();
+    userInput.focus();
+  }
 
   // Auto-resize textarea
   userInput.addEventListener("input", () => {
@@ -108,7 +206,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const hero = document.querySelector(".welcome-hero");
     if (hero) hero.remove();
 
-    appendUserMessage(query, activeFile ? activeFile.name : null);
+    appendUserMessage(query, activeFile ? activeFile.name : (activeSampleName || null));
     userInput.value = "";
     userInput.style.height = "auto";
     sendBtn.disabled = true;
@@ -120,6 +218,9 @@ document.addEventListener("DOMContentLoaded", () => {
       formData.append("message", query);
       if (activeFile) {
         formData.append("file", activeFile);
+      }
+      if (activeSampleName) {
+        formData.append("sample_name", activeSampleName);
       }
       if (secondFileInput.files.length > 0) {
         formData.append("second_file", secondFileInput.files[0]);
@@ -300,6 +401,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function escapeHtml(text) {
+    if (!text) return "";
     const div = document.createElement("div");
     div.textContent = text;
     return div.innerHTML;
@@ -307,63 +409,50 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function formatMarkdown(text) {
     if (!text) return "";
-
-    // If answer contains raw JSON, parse and render as table instead of raw code
-    if (text.includes("Financial analysis completed successfully") && text.includes("{")) {
-      const jsonStart = text.indexOf("{");
-      const jsonStr = text.substring(jsonStart);
-      try {
-        const obj = JSON.parse(jsonStr);
-        let out = `<p><strong>Analysis Summary:</strong></p>`;
-        if (obj.computed_profit_metrics) {
-          out += `<table><thead><tr><th>Metric</th><th>Amount (INR)</th></tr></thead><tbody>`;
-          for (const [k, v] of Object.entries(obj.computed_profit_metrics)) {
-            if (k !== "Formulas") out += `<tr><td>${k}</td><td><strong>₹ ${v}</strong></td></tr>`;
-          }
-          out += `</tbody></table>`;
-        }
-        if (obj.computed_financial_ratios) {
-          out += `<table><thead><tr><th>Ratio</th><th>Value</th></tr></thead><tbody>`;
-          for (const [k, v] of Object.entries(obj.computed_financial_ratios)) {
-            if (k !== "Formulas" && v !== "unavailable") out += `<tr><td>${k}</td><td><strong>${v}</strong></td></tr>`;
-          }
-          out += `</tbody></table>`;
-        }
-        return out;
-      } catch (e) {}
-    }
-
     let s = escapeHtml(text);
 
     // Markdown tables parsing
-    s = s.replace(/((?:\|[^\n]+\|\r?\n)+)/g, (match) => {
-      const lines = match.trim().split("\n");
+    s = s.replace(/((?:\|[^\n]+\|\r?\n?)+)/g, (match) => {
+      const lines = match.trim().split(/\r?\n/).filter(l => l.trim().startsWith("|"));
       if (lines.length < 2) return match;
       let html = "<table>";
       let isHeader = true;
       for (const line of lines) {
-        if (line.includes("---")) {
+        if (line.replace(/[\s|:-]/g, "").length === 0) {
           isHeader = false;
           continue;
         }
-        const cells = line.split("|").filter((_, i, arr) => i > 0 && i < arr.length - 1);
+        const cells = line.split("|").map(c => c.trim()).filter((_, idx, arr) => idx > 0 && idx < arr.length - 1);
         const tag = isHeader ? "th" : "td";
-        html += "<tr>" + cells.map(c => `<${tag}>${c.trim()}</${tag}>`).join("") + "</tr>";
+        html += "<tr>" + cells.map(c => `<${tag}>${c}</${tag}>`).join("") + "</tr>";
       }
       html += "</table>";
       return html;
     });
 
-    // Bold
+    // Headers
+    s = s.replace(/^##### (.*$)/gm, "<h6 style='margin:8px 0 4px; color:#334155; font-size:0.85rem;'>$1</h6>");
+    s = s.replace(/^#### (.*$)/gm, "<h5 style='margin:10px 0 4px; color:#1e293b; font-size:0.92rem;'>$1</h5>");
+    s = s.replace(/^### (.*$)/gm, "<h4 style='margin:12px 0 6px; color:#0f172a; font-size:1.02rem;'>$1</h4>");
+    s = s.replace(/^## (.*$)/gm, "<h3 style='margin:14px 0 8px; color:#0f172a; font-size:1.15rem;'>$1</h3>");
+    s = s.replace(/^# (.*$)/gm, "<h2 style='margin:16px 0 8px; color:#0f172a; font-size:1.25rem; border-bottom:1px solid #e2e8f0; padding-bottom:4px;'>$1</h2>");
+
+    // Bold & Italics
     s = s.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
-    // Bullet points
-    s = s.replace(/^•\s+(.*)$/gm, "<li>$1</li>");
-    s = s.replace(/^-\s+(.*)$/gm, "<li>$1</li>");
-    // Markdown headers
-    s = s.replace(/^### (.*$)/gm, "<h4 style='margin:10px 0 4px;'>$1</h4>");
-    s = s.replace(/^## (.*$)/gm, "<h3 style='margin:12px 0 6px;'>$1</h3>");
-    // Line breaks
+    s = s.replace(/\*(.*?)\*/g, "<em>$1</em>");
+
+    // Inline code
+    s = s.replace(/`([^`]+)`/g, "<code style='background:#f1f5f9; padding:2px 4px; border-radius:4px; font-size:0.85em; font-family:monospace;'>$1</code>");
+
+    // Horizontal rules
+    s = s.replace(/^---$/gm, "<hr style='border:0; border-top:1px solid #e2e8f0; margin:12px 0;'>");
+
+    // Bullets & Lists
+    s = s.replace(/^[•\-\*]\s+(.*)$/gm, "<li style='margin-left:16px;'>$1</li>");
+
+    // Clean spacing
     s = s.replace(/\n\n/g, "<br><br>");
+    s = s.replace(/\n/g, "<br>");
 
     return s;
   }

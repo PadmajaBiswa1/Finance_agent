@@ -21,11 +21,11 @@ def parse_indian_decimal(val: Union[str, int, float, Decimal, None]) -> Union[De
     if isinstance(val, (int, float)):
         return Decimal(str(val))
 
-    text = str(val).strip()
+    text = str(val).strip().strip("'\"")
     if not text or text.lower() in ("-", "na", "n/a", "nil", "none", "null", "unavailable", ""):
         return "unavailable"
 
-    # Check for negative accounting brackets, e.g. (1,50,000)
+    # Check for negative accounting brackets, e.g. (1,50,000) or -1,50,000
     is_negative = False
     if text.startswith("(") and text.endswith(")"):
         is_negative = True
@@ -33,6 +33,9 @@ def parse_indian_decimal(val: Union[str, int, float, Decimal, None]) -> Union[De
     elif text.startswith("-"):
         is_negative = True
         text = text[1:].strip()
+    elif text.startswith("'-"):
+        is_negative = True
+        text = text[2:].strip()
 
     # Strip currency symbols and whitespace
     text = text.replace("₹", "").replace("Rs.", "").replace("Rs", "").replace("INR", "").strip()

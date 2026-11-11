@@ -201,32 +201,41 @@ CANONICAL_RULES = {
 
     # Cash Flow Line Items
     "Net Cash Flow from Operating Activities": [
-        r"net\s+cash\s+(flow\s+)?from\s+operating\s+activities",
+        r"net\s+cash\s+(flow\s+)?(from|used\s+in)\s+operating\s+activities",
+        r"cash\s+flow\s+from\s+operating\s+activities",
         r"operating\s+cash\s+flow",
         r"cash\s+generated\s+from\s+operations",
         r"cfo",
     ],
     "Net Cash Flow from Investing Activities": [
-        r"net\s+cash\s+(flow\s+)?from\s+investing\s+activities",
+        r"net\s+cash\s+(flow\s+)?(from|used\s+in)\s+investing\s+activities",
+        r"cash\s+flow\s+from\s+investing\s+activities",
         r"investing\s+cash\s+flow",
+        r"cash\s+(used\s+in|from)\s+investing\s+activities",
         r"cfi",
     ],
     "Net Cash Flow from Financing Activities": [
-        r"net\s+cash\s+(flow\s+)?from\s+financing\s+activities",
+        r"net\s+cash\s+(flow\s+)?(from|used\s+in)\s+financing\s+activities",
+        r"cash\s+flow\s+from\s+financing\s+activities",
         r"financing\s+cash\s+flow",
+        r"cash\s+(used\s+in|from)\s+financing\s+activities",
         r"cff",
     ],
     "Net Increase in Cash": [
+        r"net\s+(increase|decrease|change)\s*(in)?\s*cash",
         r"net\s+increase/decrease\s+in\s+cash",
+        r"net\s+cash\s+increase",
         r"net\s+change\s+in\s+cash",
     ],
     "Opening Cash Balance": [
-        r"opening\s+cash(\s+and\s+cash\s+equivalents)?",
+        r"opening\s+cash(\s+and\s+cash\s+equivalents)?(\s+balance)?",
         r"cash\s+at\s+the\s+beginning",
+        r"opening\s+balance",
     ],
     "Closing Cash Balance": [
-        r"closing\s+cash(\s+and\s+cash\s+equivalents)?",
+        r"closing\s+cash(\s+and\s+cash\s+equivalents)?(\s+balance)?",
         r"cash\s+at\s+the\s+end",
+        r"closing\s+balance",
     ],
 }
 
